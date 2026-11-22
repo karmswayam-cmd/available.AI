@@ -8,7 +8,7 @@ import {
   Loader2, Menu, MessageSquare, MoreHorizontal, Pause, Play, Plus, Search,
   Send, Settings, ShieldCheck, Sparkles, Target, Upload, WandSparkles, X,
   Zap, Instagram, Mail, BarChart3, CalendarDays, Image as ImageIcon, Rocket,
-  Users, Workflow, Eye, ExternalLink, PanelLeftClose, RefreshCw, Store, Download, Upload
+  Users, Workflow, Eye, ExternalLink, PanelLeftClose, RefreshCw, Store, Download
 } from "lucide-react";
 
 type Tab = "Overview" | "Chat with AI" | "Build" | "Grow" | "Earn" | "Run" | "Brand" | "Inbox" | "Research" | "Files" | "Integrations" | "Settings";
