@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "available.AI — Your business, moving forward",
-  description: "Plan, build and grow your business from one calm workspace."
+  title: "available.AI — Your AI business operator",
+  description: "Plan, build, grow and earn with one AI-powered business workspace."
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
