@@ -8,7 +8,7 @@ import {
   Loader2, Menu, MessageSquare, MoreHorizontal, Pause, Play, Plus, Search,
   Send, Settings, ShieldCheck, Sparkles, Target, Upload, WandSparkles, X,
   Zap, Instagram, Mail, BarChart3, CalendarDays, Image as ImageIcon, Rocket,
-  Users, Workflow, Eye, ExternalLink, PanelLeftClose, RefreshCw, Store
+  Users, Workflow, Eye, ExternalLink, PanelLeftClose, RefreshCw, Store, Download, Upload
 } from "lucide-react";
 
 type Tab = "Overview" | "Chat with AI" | "Build" | "Grow" | "Earn" | "Run" | "Brand" | "Inbox" | "Research" | "Files" | "Integrations" | "Settings";
@@ -134,6 +134,37 @@ export default function Home(){
  };
  const filteredDocs=useMemo(()=>docs.filter(d=>(d.title+" "+d.kind).toLowerCase().includes(search.toLowerCase())),[docs,search]);
 
+ const exportWorkspace=()=>{
+  const backup={version:2,exportedAt:new Date().toISOString(),workspace:{idea,business,offer,messages,approvals,activity,docs,connected,brandColor,runLog}};
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");
+  link.href=url;link.download="available-ai-workspace-backup-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
+  toast("Workspace backup exported");
+ };
+ const importWorkspace=async(file:File|null)=>{
+  if(!file)return;
+  if(file.size>5*1024*1024){toast("Backup is too large (5 MB maximum)");return;}
+  try{
+   const parsed=JSON.parse(await file.text());
+   const d=parsed?.workspace||parsed;
+   if(!d||typeof d!=="object"||Array.isArray(d))throw new Error("Invalid backup");
+   if(typeof d.idea==="string")setIdea(d.idea);
+   if(typeof d.business==="string")setBusiness(d.business);
+   if(typeof d.offer==="string")setOffer(d.offer);
+   if(Array.isArray(d.messages))setMessages(d.messages.filter((m:any)=>m&&["user","assistant"].includes(m.role)&&typeof m.content==="string").slice(-100));
+   if(Array.isArray(d.approvals))setApprovals(d.approvals.filter((a:any)=>a&&typeof a.title==="string"&&["pending","approved","rejected"].includes(a.status)));
+   if(Array.isArray(d.activity))setActivity(d.activity.filter((a:any)=>a&&typeof a.title==="string"));
+   if(Array.isArray(d.docs))setDocs(d.docs.filter((x:any)=>x&&typeof x.title==="string"&&typeof x.body==="string"));
+   if(Array.isArray(d.connected))setConnected(d.connected.filter((x:any)=>typeof x==="string"));
+   if(typeof d.brandColor==="string"&&/^#[0-9a-fA-F]{6}$/.test(d.brandColor))setBrandColor(d.brandColor);
+   if(Array.isArray(d.runLog))setRunLog(d.runLog.filter((a:any)=>a&&typeof a.title==="string"));
+   setShowOnboarding(false);
+   toast("Workspace backup restored");
+  }catch{toast("Could not read that backup file");}
+ };
+
  const pageHeader=(eyebrow:string,title:string,desc:string,action?:React.ReactNode)=><div className="page-head"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{desc}</p></div>{action}</div>;
  const cardTitle=(eyebrow:string,title:string,extra?:React.ReactNode)=><div className="card-title"><div><div className="eyebrow">{eyebrow}</div><h3>{title}</h3></div>{extra}</div>;
 
@@ -225,7 +256,7 @@ export default function Home(){
 
  function settingsPage(){
   return <>{pageHeader("SETTINGS","Your workspace preferences.","Manage your business context, operator permissions and workspace data.")}
-   <div className="settings-grid"><section className="surface">{cardTitle("WORKSPACE","Business profile")}<label>Workspace name</label><input value={business} onChange={e=>setBusiness(e.target.value)} placeholder="My business"/><label>Business description</label><textarea rows={4} value={idea} onChange={e=>setIdea(e.target.value)} placeholder="What does your business do?"/><label>Primary offer</label><input value={offer} onChange={e=>setOffer(e.target.value)} placeholder="Your main product or service"/></section><section className="surface">{cardTitle("SAFETY","Operator permissions")}<div className="setting-line"><div><b>Approval before sending</b><small>Emails, posts and outreach always wait for review.</small></div><span className="toggle on"><i/></span></div><div className="setting-line"><div><b>Approval before publishing</b><small>Website changes remain drafts until approved.</small></div><span className="toggle on"><i/></span></div><div className="setting-line"><div><b>Automatic spending</b><small>Disabled. No payments or ad spend can be triggered.</small></div><span className="toggle"><i/></span></div></section><section className="surface danger-zone">{cardTitle("DATA","Workspace data")}<p className="muted">Your current workspace data is stored in this browser's local storage. It is not synced to a user account or database.</p><button className="btn btn-danger" onClick={()=>{if(confirm("Clear all saved available.AI workspace data from this browser?")){localStorage.removeItem("available-workspace-v2");window.location.reload();}}}>Clear local workspace data</button></section></div>
+   <div className="settings-grid"><section className="surface">{cardTitle("WORKSPACE","Business profile")}<label>Workspace name</label><input value={business} onChange={e=>setBusiness(e.target.value)} placeholder="My business"/><label>Business description</label><textarea rows={4} value={idea} onChange={e=>setIdea(e.target.value)} placeholder="What does your business do?"/><label>Primary offer</label><input value={offer} onChange={e=>setOffer(e.target.value)} placeholder="Your main product or service"/></section><section className="surface">{cardTitle("SAFETY","Operator permissions")}<div className="setting-line"><div><b>Approval before sending</b><small>Emails, posts and outreach always wait for review.</small></div><span className="toggle on"><i/></span></div><div className="setting-line"><div><b>Approval before publishing</b><small>Website changes remain drafts until approved.</small></div><span className="toggle on"><i/></span></div><div className="setting-line"><div><b>Automatic spending</b><small>Disabled. No payments or ad spend can be triggered.</small></div><span className="toggle"><i/></span></div></section><section className="surface">{cardTitle("BACKUP & RESTORE","Take your workspace with you")}<p className="muted">Export your business profile, drafts, approvals and activity as a JSON backup. You can restore it in another browser later.</p><div className="backup-actions"><button className="btn btn-secondary" onClick={exportWorkspace}><Download size={15}/> Export backup</button><label className="btn btn-secondary"><Upload size={15}/> Import backup<input type="file" accept="application/json,.json" style={{display:"none"}} onChange={e=>{const file=e.target.files?.[0]||null;void importWorkspace(file);e.currentTarget.value="";}}/></label></div></section><section className="surface danger-zone">{cardTitle("DATA","Workspace data")}<p className="muted">Your current workspace data is stored in this browser's local storage. It is not synced to a user account or database. Export a backup before clearing it.</p><button className="btn btn-danger" onClick={()=>{if(confirm("Clear all saved available.AI workspace data from this browser?")){localStorage.removeItem("available-workspace-v2");window.location.reload();}}}>Clear local workspace data</button></section></div>
   </>;
  }
 
